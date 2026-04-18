@@ -34,11 +34,12 @@ import {
 const { Text } = Typography;
 import { API, getSystemName, showError, showSuccess } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2 } from 'lucide-react';
+import { BookOpen, Plus, Trash2 } from 'lucide-react';
 
 export default function SettingsPaymentGatewayCreem(props) {
   const { t } = useTranslation();
   const systemName = getSystemName();
+  const sectionTitle = props.hideSectionTitle ? undefined : t('Creem 设置');
   const [loading, setLoading] = useState(false);
   const [inputs, setInputs] = useState({
     CreemApiKey: '',
@@ -260,15 +261,22 @@ export default function SettingsPaymentGatewayCreem(props) {
         onValueChange={handleFormChange}
         getFormApi={(api) => (formApiRef.current = api)}
       >
-        <Form.Section text={t('Creem 设置')}>
-          <Text>
-            {t('Creem 介绍')}
-            <a href='https://creem.io' target='_blank' rel='noreferrer'>
-              Creem Official Site
-            </a>
-            <br />
-          </Text>
-          <Banner type='info' description={t('Creem Setting Tips')} />
+        <Form.Section text={sectionTitle}>
+          <Banner
+            type='info'
+            icon={<BookOpen size={16} />}
+            description={
+              <>
+                {t('Creem 介绍')}
+                <a href='https://creem.io' target='_blank' rel='noreferrer'>
+                  Creem Official Site
+                </a>
+                <br />
+                {t('Creem Setting Tips')}
+              </>
+            }
+            style={{ marginBottom: 16 }}
+          />
 
           <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}>
             <Col xs={24} sm={24} md={8} lg={8} xl={8}>
@@ -282,7 +290,7 @@ export default function SettingsPaymentGatewayCreem(props) {
             <Col xs={24} sm={24} md={8} lg={8} xl={8}>
               <Form.Input
                 field='CreemWebhookSecret'
-                label={t('Webhook 密钥')}
+                label={t('Webhook 签名密钥')}
                 placeholder={`用于验证回调 ${systemName} 的 webhook 请求的密钥，敏感信息不显示`}
                 type='password'
               />
@@ -290,7 +298,7 @@ export default function SettingsPaymentGatewayCreem(props) {
             <Col xs={24} sm={24} md={8} lg={8} xl={8}>
               <Form.Switch
                 field='CreemTestMode'
-                label={t('测试模式')}
+                label={t('沙盒模式')}
                 extraText={t('启用后将使用 Creem Test Mode')}
               />
             </Col>
