@@ -32,6 +32,7 @@ import {
   showSuccess,
   getLocalizedCustomContent,
   isExternalLinkContent,
+  looksLikeHtmlContent,
 } from '../../helpers';
 import { useIsMobile } from '../../hooks/common/useIsMobile';
 import { API_ENDPOINTS } from '../../constants/common.constant';
@@ -103,6 +104,9 @@ const Home = () => {
 
   const homePageContent = useMemo(() => {
     if (!homePageSource || isIframeHomePage) {
+      return homePageSource;
+    }
+    if (looksLikeHtmlContent(homePageSource)) {
       return homePageSource;
     }
     return marked.parse(homePageSource);

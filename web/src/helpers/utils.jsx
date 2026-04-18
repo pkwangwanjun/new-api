@@ -158,6 +158,19 @@ export function isExternalLinkContent(content) {
   return /^https?:\/\//i.test(content.trim());
 }
 
+export function looksLikeHtmlContent(content) {
+  if (typeof content !== 'string') {
+    return false;
+  }
+
+  const trimmed = content.trim();
+  if (!trimmed.startsWith('<')) {
+    return false;
+  }
+
+  return /<\/?[a-z][\s\S]*>/i.test(trimmed);
+}
+
 export async function copy(text) {
   let okay = true;
   try {
