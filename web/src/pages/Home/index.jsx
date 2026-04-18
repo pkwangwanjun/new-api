@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Typography,
@@ -25,13 +25,21 @@ import {
   ScrollList,
   ScrollItem,
 } from '@douyinfe/semi-ui';
-import { API, showError, copy, showSuccess } from '../../helpers';
+import {
+  API,
+  showError,
+  copy,
+  showSuccess,
+  getLocalizedCustomContent,
+  isExternalLinkContent,
+} from '../../helpers';
 import { useIsMobile } from '../../hooks/common/useIsMobile';
 import { API_ENDPOINTS } from '../../constants/common.constant';
 import { StatusContext } from '../../context/Status';
 import { useActualTheme } from '../../context/Theme';
 import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
+import { normalizeLanguage } from '../../i18n/language';
 import {
   IconGithubLogo,
   IconPlay,
@@ -70,7 +78,7 @@ const Home = () => {
   const [statusState] = useContext(StatusContext);
   const actualTheme = useActualTheme();
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
-  const [homePageContent, setHomePageContent] = useState('');
+  const [homePageContentRaw, setHomePageContentRaw] = useState('');
   const [noticeVisible, setNoticeVisible] = useState(false);
   const isMobile = useIsMobile();
   const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
@@ -80,32 +88,41 @@ const Home = () => {
   const endpointItems = API_ENDPOINTS.map((e) => ({ value: e }));
   const [endpointIndex, setEndpointIndex] = useState(0);
   const isChinese = i18n.language.startsWith('zh');
+  const currentLanguage = normalizeLanguage(i18n.language) || 'zh-CN';
+  const iframeRef = useRef(null);
+
+  const homePageSource = useMemo(
+    () => getLocalizedCustomContent(homePageContentRaw, currentLanguage),
+    [homePageContentRaw, currentLanguage],
+  );
+
+  const isIframeHomePage = useMemo(
+    () => isExternalLinkContent(homePageSource),
+    [homePageSource],
+  );
+
+  const homePageContent = useMemo(() => {
+    if (!homePageSource || isIframeHomePage) {
+      return homePageSource;
+    }
+    return marked.parse(homePageSource);
+  }, [homePageSource, isIframeHomePage]);
 
   const displayHomePageContent = async () => {
-    setHomePageContent(localStorage.getItem('home_page_content') || '');
+    const cachedHomePageContent =
+      localStorage.getItem('home_page_content_raw') ||
+      localStorage.getItem('home_page_content') ||
+      '';
+    setHomePageContentRaw(cachedHomePageContent);
     const res = await API.get('/api/home_page_content');
     const { success, message, data } = res.data;
     if (success) {
-      let content = data;
-      if (!data.startsWith('https://')) {
-        content = marked.parse(data);
-      }
-      setHomePageContent(content);
-      localStorage.setItem('home_page_content', content);
-
-      // 如果内容是 URL，则发送主题模式
-      if (data.startsWith('https://')) {
-        const iframe = document.querySelector('iframe');
-        if (iframe) {
-          iframe.onload = () => {
-            iframe.contentWindow.postMessage({ themeMode: actualTheme }, '*');
-            iframe.contentWindow.postMessage({ lang: i18n.language }, '*');
-          };
-        }
-      }
+      setHomePageContentRaw(data || '');
+      localStorage.setItem('home_page_content_raw', data || '');
+      localStorage.setItem('home_page_content', data || '');
     } else {
       showError(message);
-      setHomePageContent('加载首页内容失败...');
+      setHomePageContentRaw('加载首页内容失败...');
     }
     setHomePageContentLoaded(true);
   };
@@ -140,6 +157,29 @@ const Home = () => {
   useEffect(() => {
     displayHomePageContent().then();
   }, []);
+
+  useEffect(() => {
+    if (!isIframeHomePage) {
+      return;
+    }
+
+    const iframe = iframeRef.current;
+    if (!iframe) {
+      return;
+    }
+
+    const syncIframeContext = () => {
+      iframe.contentWindow?.postMessage({ themeMode: actualTheme }, '*');
+      iframe.contentWindow?.postMessage({ lang: currentLanguage }, '*');
+    };
+
+    iframe.addEventListener('load', syncIframeContext);
+    syncIframeContext();
+
+    return () => {
+      iframe.removeEventListener('load', syncIframeContext);
+    };
+  }, [actualTheme, currentLanguage, isIframeHomePage, homePageContent]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -336,14 +376,17 @@ const Home = () => {
         </div>
       ) : (
         <div className='overflow-x-hidden w-full'>
-          {homePageContent.startsWith('https://') ? (
+          {isIframeHomePage ? (
             <iframe
+              ref={iframeRef}
               src={homePageContent}
+              title='custom-homepage'
               className='w-full h-screen border-none'
             />
           ) : (
             <div
               className='mt-[60px]'
+              data-home-lang={currentLanguage}
               dangerouslySetInnerHTML={{ __html: homePageContent }}
             />
           )}

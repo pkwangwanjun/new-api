@@ -27,6 +27,7 @@ import {
 } from '../constants/playground.constants';
 import { TABLE_COMPACT_MODES_KEY } from '../constants';
 import { MOBILE_BREAKPOINT } from '../hooks/common/useIsMobile';
+import { normalizeLanguage, supportedLanguages } from '../i18n/language';
 
 const HTMLToastContent = ({ htmlContent }) => {
   return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
@@ -67,6 +68,94 @@ export function getUserIdFromLocalStorage() {
 
 export function getFooterHTML() {
   return localStorage.getItem('footer_html');
+}
+
+function parseLocalizedContentMap(content) {
+  if (typeof content !== 'string') {
+    return null;
+  }
+
+  const trimmed = content.trim();
+  if (!trimmed.startsWith('{')) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return null;
+    }
+
+    const localizedEntries = Object.entries(parsed).filter(
+      ([, value]) => typeof value === 'string',
+    );
+    if (localizedEntries.length === 0) {
+      return null;
+    }
+
+    const hasLanguageKey = localizedEntries.some(([key]) => {
+      if (key === 'default') {
+        return true;
+      }
+      const normalizedKey = normalizeLanguage(key);
+      return supportedLanguages.includes(normalizedKey);
+    });
+    if (!hasLanguageKey) {
+      return null;
+    }
+
+    const normalizedMap = {};
+    for (const [key, value] of localizedEntries) {
+      normalizedMap[key] = value;
+      const normalizedKey = normalizeLanguage(key);
+      if (!(normalizedKey in normalizedMap)) {
+        normalizedMap[normalizedKey] = value;
+      }
+    }
+
+    return normalizedMap;
+  } catch {
+    return null;
+  }
+}
+
+export function getLocalizedCustomContent(content, language) {
+  if (typeof content !== 'string') {
+    return '';
+  }
+
+  const localizedMap = parseLocalizedContentMap(content);
+  if (!localizedMap) {
+    return content;
+  }
+
+  const normalizedLanguage = normalizeLanguage(language) || 'zh-CN';
+  const baseLanguage = normalizedLanguage.split('-')[0];
+  const candidates = [
+    language,
+    normalizedLanguage,
+    baseLanguage,
+    'default',
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    const value = localizedMap[candidate];
+    if (typeof value === 'string' && value.trim() !== '') {
+      return value;
+    }
+  }
+
+  const fallbackValue = Object.values(localizedMap).find(
+    (value) => typeof value === 'string' && value.trim() !== '',
+  );
+  return fallbackValue || '';
+}
+
+export function isExternalLinkContent(content) {
+  if (typeof content !== 'string') {
+    return false;
+  }
+  return /^https?:\/\//i.test(content.trim());
 }
 
 export async function copy(text) {

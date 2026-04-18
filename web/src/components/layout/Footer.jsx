@@ -17,26 +17,30 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState, useMemo, useContext } from 'react';
+import React, { useMemo, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@douyinfe/semi-ui';
-import { getFooterHTML, getLogo, getSystemName } from '../../helpers';
+import {
+  getFooterHTML,
+  getLogo,
+  getSystemName,
+  getLocalizedCustomContent,
+} from '../../helpers';
 import { StatusContext } from '../../context/Status';
+import { normalizeLanguage } from '../../i18n/language';
 
 const FooterBar = () => {
-  const { t } = useTranslation();
-  const [footer, setFooter] = useState(getFooterHTML());
+  const { t, i18n } = useTranslation();
   const systemName = getSystemName();
   const logo = getLogo();
   const [statusState] = useContext(StatusContext);
   const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
-
-  const loadFooter = () => {
-    let footer_html = localStorage.getItem('footer_html');
-    if (footer_html) {
-      setFooter(footer_html);
-    }
-  };
+  const currentLanguage = normalizeLanguage(i18n.language) || 'zh-CN';
+  const rawFooter = statusState?.status?.footer_html ?? getFooterHTML() ?? '';
+  const footer = useMemo(
+    () => getLocalizedCustomContent(rawFooter, currentLanguage),
+    [rawFooter, currentLanguage],
+  );
 
   const currentYear = new Date().getFullYear();
 
@@ -214,16 +218,13 @@ const FooterBar = () => {
     [logo, systemName, t, currentYear, isDemoSiteMode],
   );
 
-  useEffect(() => {
-    loadFooter();
-  }, []);
-
   return (
     <div className='w-full'>
       {footer ? (
         <footer className='relative h-auto py-4 px-6 md:px-24 w-full flex items-center justify-center overflow-hidden'>
           <div className='flex flex-col md:flex-row items-center justify-between w-full max-w-[1110px] gap-4'>
             <div
+              data-home-lang={currentLanguage}
               className='custom-footer na-cb6feafeb3990c78 text-sm !text-semi-color-text-1'
               dangerouslySetInnerHTML={{ __html: footer }}
             ></div>
