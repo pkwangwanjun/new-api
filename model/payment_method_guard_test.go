@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -169,4 +170,50 @@ func TestExpireSubscriptionOrder_RejectsMismatchedPaymentMethod(t *testing.T) {
 	order := GetSubscriptionOrderByTradeNo("sub-expire-guard")
 	require.NotNil(t, order)
 	assert.Equal(t, common.TopUpStatusPending, order.Status)
+}
+
+func TestPurchaseSubscriptionWithWallet_SucceedsAndDeductsQuota(t *testing.T) {
+	truncateTables(t)
+
+	plan := insertSubscriptionPlanForPaymentGuardTest(t, 501)
+	requiredQuota := int(decimal.NewFromFloat(plan.PriceAmount).Mul(decimal.NewFromFloat(common.QuotaPerUnit)).Round(0).IntPart())
+	insertUserForPaymentGuardTest(t, 404, requiredQuota+1234)
+
+	result, err := PurchaseSubscriptionWithWallet(404, plan.Id)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, requiredQuota, result.DeductedQuota)
+	assert.Equal(t, 1234, result.RemainingQuota)
+	assert.Equal(t, 1234, getUserQuotaForPaymentGuardTest(t, 404))
+	assert.Equal(t, int64(1), countUserSubscriptionsForPaymentGuardTest(t, 404))
+
+	order := GetSubscriptionOrderByTradeNo(result.TradeNo)
+	require.NotNil(t, order)
+	assert.Equal(t, common.TopUpStatusSuccess, order.Status)
+	assert.Equal(t, PaymentMethodWallet, order.PaymentMethod)
+
+	topUp := GetTopUpByTradeNo(result.TradeNo)
+	require.NotNil(t, topUp)
+	assert.Equal(t, common.TopUpStatusSuccess, topUp.Status)
+	assert.Equal(t, PaymentMethodWallet, topUp.PaymentMethod)
+	assert.EqualValues(t, 0, topUp.Amount)
+}
+
+func TestPurchaseSubscriptionWithWallet_RejectsInsufficientQuota(t *testing.T) {
+	truncateTables(t)
+
+	plan := insertSubscriptionPlanForPaymentGuardTest(t, 601)
+	requiredQuota := int(decimal.NewFromFloat(plan.PriceAmount).Mul(decimal.NewFromFloat(common.QuotaPerUnit)).Round(0).IntPart())
+	insertUserForPaymentGuardTest(t, 505, requiredQuota-1)
+
+	result, err := PurchaseSubscriptionWithWallet(505, plan.Id)
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "钱包余额不足")
+	assert.Equal(t, requiredQuota-1, getUserQuotaForPaymentGuardTest(t, 505))
+	assert.Zero(t, countUserSubscriptionsForPaymentGuardTest(t, 505))
+
+	var orderCount int64
+	require.NoError(t, DB.Model(&SubscriptionOrder{}).Where("user_id = ?", 505).Count(&orderCount).Error)
+	assert.Zero(t, orderCount)
 }

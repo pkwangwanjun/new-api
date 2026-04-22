@@ -95,6 +95,8 @@ const RechargeCard = ({
   activeSubscriptions = [],
   allSubscriptions = [],
   reloadSubscriptionSelf,
+  currentUserQuota = 0,
+  onWalletPurchaseSuccess,
 }) => {
   const onlineFormApiRef = useRef(null);
   const redeemFormApiRef = useRef(null);
@@ -668,6 +670,8 @@ const RechargeCard = ({
                 activeSubscriptions={activeSubscriptions}
                 allSubscriptions={allSubscriptions}
                 reloadSubscriptionSelf={reloadSubscriptionSelf}
+                currentUserQuota={currentUserQuota}
+                onWalletPurchaseSuccess={onWalletPurchaseSuccess}
                 withCard={false}
               />
             </div>

@@ -51,6 +51,7 @@ const STATUS_CONFIG = {
 const PAYMENT_METHOD_MAP = {
   stripe: 'Stripe',
   creem: 'Creem',
+  wallet: '钱包',
   waffo: 'Waffo',
   alipay: '支付宝',
   wxpay: '微信',
@@ -217,14 +218,14 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
           if (record.status === 'pending') {
             actions.push(
               <Button
-                key="complete"
+                key='complete'
                 size='small'
                 type='primary'
                 theme='outline'
                 onClick={() => confirmAdminComplete(record.trade_no)}
               >
                 {t('补单')}
-              </Button>
+              </Button>,
             );
           }
           return actions.length > 0 ? <>{actions}</> : null;

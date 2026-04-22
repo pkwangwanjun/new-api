@@ -44,7 +44,11 @@ const { Text } = Typography;
 // 过滤易支付方式
 function getEpayMethods(payMethods = []) {
   return (payMethods || []).filter(
-    (m) => m?.type && m.type !== 'stripe' && m.type !== 'creem',
+    (m) =>
+      m?.type &&
+      m.type !== 'stripe' &&
+      m.type !== 'creem' &&
+      !String(m.type).startsWith('waffo'),
   );
 }
 
@@ -82,6 +86,8 @@ const SubscriptionPlansCard = ({
   activeSubscriptions = [],
   allSubscriptions = [],
   reloadSubscriptionSelf,
+  currentUserQuota = 0,
+  onWalletPurchaseSuccess,
   withCard = true,
 }) => {
   const [open, setOpen] = useState(false);
@@ -110,6 +116,31 @@ const SubscriptionPlansCard = ({
       await reloadSubscriptionSelf?.();
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const payWallet = async () => {
+    if (!selectedPlan?.plan?.id) {
+      showError(t('请选择订阅套餐'));
+      return;
+    }
+    setPaying(true);
+    try {
+      const res = await API.post('/api/subscription/wallet/pay', {
+        plan_id: selectedPlan.plan.id,
+      });
+      if (res.data?.success) {
+        await onWalletPurchaseSuccess?.(res.data.data);
+        await reloadSubscriptionSelf?.();
+        showSuccess(t('成功'));
+        closeBuy();
+      } else {
+        showError(res.data?.message || t('支付失败'));
+      }
+    } catch (e) {
+      showError(t('支付请求失败'));
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -681,6 +712,8 @@ const SubscriptionPlansCard = ({
               }
             : null
         }
+        currentUserQuota={currentUserQuota}
+        onPayWallet={payWallet}
         onPayStripe={payStripe}
         onPayCreem={payCreem}
         onPayEpay={payEpay}

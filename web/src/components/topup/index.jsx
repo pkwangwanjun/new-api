@@ -571,6 +571,19 @@ const TopUp = () => {
     }
   };
 
+  const handleWalletSubscriptionPurchaseSuccess = (data) => {
+    if (!userState.user) return;
+    const remainingQuota = Number(data?.remaining_quota);
+    if (!Number.isFinite(remainingQuota)) return;
+    userDispatch({
+      type: 'login',
+      payload: {
+        ...userState.user,
+        quota: remainingQuota,
+      },
+    });
+  };
+
   // 获取充值配置信息
   const getTopupInfo = async () => {
     try {
@@ -647,7 +660,7 @@ const TopUp = () => {
                 ? data.waffo_min_topup
                 : enableWaffoPancakeTopUp
                   ? data.waffo_pancake_min_topup
-                : 1;
+                  : 1;
           setEnableOnlineTopUp(enableOnlineTopUp);
           setEnableStripeTopUp(enableStripeTopUp);
           setEnableCreemTopUp(enableCreemTopUp);
@@ -986,6 +999,8 @@ const TopUp = () => {
           activeSubscriptions={activeSubscriptions}
           allSubscriptions={allSubscriptions}
           reloadSubscriptionSelf={getSubscriptionSelf}
+          currentUserQuota={userState?.user?.quota || 0}
+          onWalletPurchaseSuccess={handleWalletSubscriptionPurchaseSuccess}
         />
         <InvitationCard
           t={t}
