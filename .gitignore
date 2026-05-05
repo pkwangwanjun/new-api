@@ -8,6 +8,9 @@ upload
 build
 *.db-journal
 logs
+web/default/dist
+web/classic/dist
+web/node_modules
 web/dist
 # Keep the Bun lockfile versioned so fresh clones can build the frontend image.
 .env
@@ -22,6 +25,7 @@ tiktoken_cache
 .cache
 plans
 .claude
+.cursor
 
 electron/node_modules
 electron/dist
