@@ -49,13 +49,18 @@ export function isRoot() {
 
 export function getSystemName() {
   let system_name = localStorage.getItem('system_name');
-  if (!system_name) return 'Token Pool';
+  if (
+    !system_name ||
+    system_name === 'Token Pool' ||
+    system_name === 'TokenPool'
+  )
+    return 'kyvolen';
   return system_name;
 }
 
 export function getLogo() {
   let logo = localStorage.getItem('logo');
-  if (!logo) return '/TokenPool.png';
+  if (!logo || logo === '/TokenPool.png') return '/kyvolen.ico';
   return logo;
 }
 

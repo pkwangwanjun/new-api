@@ -18,9 +18,18 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 export function setStatusData(data) {
-  localStorage.setItem('status', JSON.stringify(data));
-  localStorage.setItem('system_name', data.system_name);
-  localStorage.setItem('logo', data.logo);
+  const normalizedData = {
+    ...data,
+    system_name:
+      data.system_name === 'Token Pool' || data.system_name === 'TokenPool'
+        ? 'kyvolen'
+        : data.system_name,
+    logo: data.logo === '/TokenPool.png' ? '/kyvolen.ico' : data.logo,
+  };
+
+  localStorage.setItem('status', JSON.stringify(normalizedData));
+  localStorage.setItem('system_name', normalizedData.system_name);
+  localStorage.setItem('logo', normalizedData.logo);
   localStorage.setItem('footer_html', data.footer_html);
   localStorage.setItem('quota_per_unit', data.quota_per_unit);
   // 兼容：保留旧字段，同时写入新的额度展示类型

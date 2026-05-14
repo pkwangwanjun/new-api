@@ -458,8 +458,14 @@ func updateOptionMap(key string, value string) (err error) {
 	case "Footer":
 		common.Footer = value
 	case "SystemName":
+		if value == "Token Pool" || value == "TokenPool" {
+			value = "kyvolen"
+		}
 		common.SystemName = value
 	case "Logo":
+		if value == "/TokenPool.png" {
+			value = "/kyvolen.ico"
+		}
 		common.Logo = value
 	case "WeChatServerAddress":
 		common.WeChatServerAddress = value

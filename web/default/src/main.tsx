@@ -30,6 +30,7 @@ import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { getStatus } from '@/lib/api'
 import '@/lib/dayjs'
+import { resolveLogo, resolveSystemName } from '@/lib/constants'
 import { applyFaviconToDom } from '@/lib/dom-utils'
 import { handleServerError } from '@/lib/handle-server-error'
 import { DirectionProvider } from './context/direction-provider'
@@ -125,8 +126,8 @@ const rootElement = document.getElementById('root')!
       const saved = localStorage.getItem('status')
       if (saved) {
         const s = JSON.parse(saved)
-        if (s?.system_name) apply(s.system_name)
-        if (s?.logo) applyFaviconToDom(s.logo)
+        if (s?.system_name) apply(resolveSystemName(s.system_name))
+        if (s?.logo) applyFaviconToDom(resolveLogo(s.logo))
       }
     } catch {
       /* empty */
@@ -135,14 +136,19 @@ const rootElement = document.getElementById('root')!
     getStatus()
       .then((s) => {
         if (s?.system_name) {
-          apply(s.system_name as string)
+          const normalizedStatus = {
+            ...s,
+            system_name: resolveSystemName(s.system_name as string),
+            logo: resolveLogo(s.logo as string | undefined),
+          }
+          apply(normalizedStatus.system_name)
           try {
-            localStorage.setItem('status', JSON.stringify(s))
+            localStorage.setItem('status', JSON.stringify(normalizedStatus))
           } catch {
             /* empty */
           }
         }
-        if (s?.logo) applyFaviconToDom(s.logo as string)
+        if (s?.logo) applyFaviconToDom(resolveLogo(s.logo as string))
       })
       .catch(() => {
         /* empty */

@@ -22,7 +22,25 @@ For commercial licensing, please contact support@quantumnous.com
 
 // System Configuration Defaults
 export const DEFAULT_SYSTEM_NAME = 'New API'
-export const DEFAULT_LOGO = '/logo.png'
+export const DEFAULT_LOGO = '/kyvolen.ico'
+export const PLATFORM_SYSTEM_NAME = 'kyvolen'
+export const LEGACY_TOKEN_POOL_LOGO = '/TokenPool.png'
+
+export function resolveSystemName(
+  systemName?: string | null,
+  fallback = DEFAULT_SYSTEM_NAME
+) {
+  const value = systemName?.trim()
+  if (!value) return fallback
+  if (value === 'Token Pool' || value === 'TokenPool') {
+    return PLATFORM_SYSTEM_NAME
+  }
+  return value
+}
+
+export function resolveLogo(logo?: string | null) {
+  return logo === LEGACY_TOKEN_POOL_LOGO ? DEFAULT_LOGO : logo || DEFAULT_LOGO
+}
 
 // LocalStorage Keys
 export const STORAGE_KEYS = {
