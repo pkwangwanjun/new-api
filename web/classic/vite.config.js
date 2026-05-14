@@ -70,7 +70,7 @@ export default defineConfig({
         manualChunks: {
           'react-core': ['react', 'react-dom', 'react-router-dom'],
           'semi-ui': ['@douyinfe/semi-icons', '@douyinfe/semi-ui'],
-          tools: ['axios', 'history', 'marked'],
+          tools: ['axios', 'history'],
           'react-components': [
             'react-dropzone',
             'react-fireworks',

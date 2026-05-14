@@ -28,13 +28,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useIsMobile } from '../../hooks/common/useIsMobile';
 import { useSidebarCollapsed } from '../../hooks/common/useSidebarCollapsed';
 import { useTranslation } from 'react-i18next';
-import {
-  API,
-  getLogo,
-  getSystemName,
-  showError,
-  setStatusData,
-} from '../../helpers';
+import { getLogo, getSystemName, showError } from '../../helpers/utils';
+import { setStatusData } from '../../helpers/data';
 import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
 import { useLocation } from 'react-router-dom';
@@ -88,8 +83,12 @@ const PageLayout = () => {
 
   const loadStatus = async () => {
     try {
-      const res = await API.get('/api/status');
-      const { success, data } = res.data;
+      const res = await fetch('/api/status', {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+      const { success, data } = await res.json();
       if (success) {
         statusDispatch({ type: 'set', payload: data });
         setStatusData(data);
